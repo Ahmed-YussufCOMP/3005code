@@ -1,0 +1,134 @@
+import psycopg2
+from psycopg2 import Error
+
+def connect():
+    try:
+        connection = psycopg2.connect(
+            user="postgres",
+            password="admin",
+            host="localhost",
+            port="5432",
+            database="test_db"
+        )
+        return connection
+    except (Exception, Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
+def addStudent(first_name, last_name, email, enrollment_date):
+    try:
+        connection = connect()
+        if connection:
+            cursor = connection.cursor()
+            insert_query = '''INSERT INTO students (first_name, last_name, email, enrollment_date) 
+                              VALUES (%s, %s, %s, %s)'''
+            cursor.execute(insert_query, (first_name, last_name, email, enrollment_date))
+            connection.commit()
+            print("Student added successfully")
+
+    except (Exception, Error) as error:
+        print("Error while adding student:", error)
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+def updateStudentEmail(student_id, new_email):
+    try:
+        connection = connect()
+        if connection:
+            cursor = connection.cursor()
+            update_query = "UPDATE students SET email = %s WHERE student_id = %s"
+            cursor.execute(update_query, (new_email, student_id))
+            connection.commit()
+            print("Email updated successfully")
+
+    except (Exception, Error) as error:
+        print("Error while updating email:", error)
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+def deleteStudent(student_id):
+    try:
+        connection = connect()
+        if connection:
+            cursor = connection.cursor()
+            delete_query = "DELETE FROM students WHERE student_id = %s"
+            cursor.execute(delete_query, (student_id,))
+            connection.commit()
+            print("Student deleted successfully")
+
+    except (Exception, Error) as error:
+        print("Error while deleting student:", error)
+
+    finally:
+        if connection:
+            cursor.close()
+            connection.close()
+
+connection = connect()
+cursor = connection.cursor()
+create_table_query = '''CREATE TABLE IF NOT EXISTS students (
+                            student_id SERIAL PRIMARY KEY,
+                            first_name TEXT NOT NULL,
+                            last_name TEXT NOT NULL,
+                            email TEXT NOT NULL UNIQUE,
+                            enrollment_date DATE
+                        )'''
+cursor.execute(create_table_query)
+connection.commit()
+print("Table created successfully")
+insert_query = '''INSERT INTO students (first_name, last_name, email, enrollment_date) 
+                      VALUES (%s, %s, %s, %s)'''
+records_to_insert = [
+        ('John', 'Doe', 'john.doe@example.com', '2023-09-01'),
+        ('Jane', 'Smith', 'jane.smith@example.com', '2023-09-01'),
+        ('Jim', 'Beam', 'jim.beam@example.com', '2023-09-02')
+    ]
+cursor.executemany(insert_query, records_to_insert)
+connection.commit()
+print("Initial data inserted successfully")
+
+while True:
+    print("Main Menu:")
+    print("1. Add Student")
+    print("2. Update Student Email")
+    print("3. Delete Student")
+    print("4. Exit")
+    print("5 Exit")
+    choice = input("Enter your choice (1-5): ")
+    if choice == "1":
+        print("Add Student Menu:")
+        first_name = input("Enter first name: ")
+        last_name = input("Enter last name: ")
+        email = input("Enter email: ")
+        enrollment_date = input("Enter enrollment date (YYYY-MM-DD): ")
+        addStudent(first_name, last_name, email, enrollment_date)
+
+    elif choice == "2":
+        print("Update Email Menu:")
+        student_id = int(input("Enter student ID: "))
+        new_email = input("Enter new email: ")
+        updateStudentEmail(student_id, new_email)
+
+    elif choice == "3":
+        print("Delete Student Menu:")
+        student_id = int(input("Enter student ID: "))
+        deleteStudent(student_id)
+
+    elif choice == "4":
+        print("Exiting...")
+        break
+
+    elif choice =="5":     
+        cursor.execute("SELECT * FROM students")
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
+    else:
+        print("Invalid,Please enter a number between 1 and 5.")
+cursor.close()
+connection.close()
